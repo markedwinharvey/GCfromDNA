@@ -6,19 +6,19 @@ GCfromDNA takes optional filename argument(s). If no filename is provided,
 the script prompts for user's selection from fasta files located in the current directory.
 Batch processing is possible. 
 GC content (percent) is calculated for each sequence, the sequence names are formatted, and 
-the data is saved as a csv file with partial original filename (e.g., file1.fa --> file1_GC.csv). 
+the data is saved as a csv file with modified original filename (e.g., file1.fa --> file1_GC.csv). 
 
 Example invocations: 
 
 #----as imported module----#
 	#!/usr/bin/env python
 	from biotoolkit import GCfromDNA
-	GCfromDNA.compute( ['file1.fa','file2.fa','file3.fa'] ) 	#pass optional file arguments as list
+	GCfromDNA.compute( 'file1.fa','file2.fa','file3.fa' ) 		#pass optional file arguments as tuple
 
 #----interactively----#
 	$ python
 	>>> from biotoolkit import GCfromDNA
-	>>> GCfromDNA.compute()										#pass optional file arguments as list (not shown)
+	>>> GCfromDNA.compute()										#pass optional file arguments as tuple (not shown)
 
 #----from folder containing GCfromDNA.py----#
 	$ python GCfromDNA.py file1.fa file2.fa file3.fa			#optional file arguments separated by spaces
@@ -32,6 +32,7 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 import sys
 import subprocess as sp
+import csv
 
 
 def exit():
@@ -40,13 +41,14 @@ def exit():
 
 
 def write_csv(new_doc,fname):
-	#Generate csv file from parsed data and save as modified original filename (- '.fa') + '_GC.csv'
-	new_csv = '\n'.join([x[0]+','+str(x[1]) for x in new_doc])
+	#Generate csv file from parsed data and save as modified original filename (- '.fa') + '_GC.csv'	
 	fname2 = fname[:len(fname)-3]+'_GC.csv'
-	with open(fname2,'w') as f:
-		f.write(new_csv)
+	with open(fname2,'wb') as f:
+		new_csv = csv.writer(f, delimiter=',')
+		for each_line in new_doc:
+			new_csv.writerow(each_line)
 	print '  New doc \'%s\' written from file \'%s\'.' % (fname2,fname)
-
+	
 
 def parse_files(files):
 	#Parse data from fasta files using Bio SeqIO module (handles multiple input files). 
@@ -80,10 +82,7 @@ def compute(*args):
 	print '#---------------- GCfromDNA version 0.1 -------------------#'
 	print '#--Determine GC-content of DNA sequences from fasta files--#'
 	print
-
-	if args:	
-		#extract list from tuple, if necessary
-		args = args[0]	
+	
 	if args:	
 		#optional filename arguments found; bypass user selection phase		
 		parse_files(args)
@@ -93,7 +92,6 @@ def compute(*args):
 		files = [x for x in sp.Popen(['ls'],stdout=sp.PIPE).communicate()[0].split() if x.endswith('.fa')]
 		
 		if files:
-			resp = ''
 			while 1:
 				print 'This folder contains:'
 				for f in range(len(files)):
@@ -135,11 +133,10 @@ def compute(*args):
 	
 def main():
 	
-	args = []
 	if len(sys.argv) > 1:
-		args = sys.argv[1:]
+		args = tuple(sys.argv[1:])
 	
-	compute(args)
+	compute(*args)
 	
 if __name__ == '__main__':
 	main()
